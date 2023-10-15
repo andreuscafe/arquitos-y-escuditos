@@ -1,0 +1,45 @@
+.chat_div {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+.chat_border {
+  border: 1px solid red;
+  padding: 5px;
+}
+.chat_input {
+  color: #000;
+  height: 2rem;
+  width: 15rem;
+  padding: 5px;
+}
+.chat_button {
+  height: 2rem;
+}
+.chatProfileRight {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-direction: row-reverse;
+  margin-bottom: 5px;
+}
+.chatProfileLeft {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 5px;
+}
+.chatProfileSpan {
+  background-color: rgb(213, 213, 182);
+  height: 2rem;
+  width: 2rem;
+  border-radius: 50%;
+  border: 1px solid white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: black;
+}
