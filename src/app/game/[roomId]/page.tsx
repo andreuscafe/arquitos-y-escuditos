@@ -3,15 +3,17 @@ import React, { useEffect, useState } from "react";
 import useStore from "@/lib/store";
 import { useParams } from "next/navigation";
 import GameCanvas from "@/components/GameCanvas";
+import _ from "lodash";
 
 const GamePage = () => {
   const params = useParams();
 
   const roomId = params.roomId as string;
 
-  const { socket, players } = useStore((state) => ({
+  const { socket, players, player } = useStore((state) => ({
     socket: state.socket,
-    players: state.players
+    players: state.players,
+    player: state.player
   }));
 
   const { setPlayers, setPlayer } = useStore.getState();
@@ -43,11 +45,11 @@ const GamePage = () => {
       socket.off("receive_msg");
       socket.off("connect");
     };
-  }, [socket, roomId, setPlayers]);
+  }, [socket, roomId, setPlayers, setPlayer]);
 
   return (
     <div className="h-screen w-screen bg-black">
-      <GameCanvas players={players} />
+      <GameCanvas players={players} player={player} />
     </div>
   );
 };

@@ -33,7 +33,16 @@ const useSocket = () => {
     lastCoordinatesEmited.current = coordinates;
   };
 
-  return { emitCoordinates };
+  const emitItem = (currentItem: Player["currentItem"]) => {
+    const data = {
+      roomId,
+      currentItem
+    };
+
+    socket.emit("send_item", data);
+  };
+
+  return { emitCoordinates, emitItem };
 };
 
 export default useSocket;

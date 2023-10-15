@@ -4,47 +4,22 @@ import useFrameloop from "@/lib/hooks/useFrameloop";
 import useSocket from "@/lib/hooks/useSocket";
 import { useWASD } from "@/lib/hooks/useWASD";
 import useStore from "@/lib/store";
-import React, { useMemo, useState } from "react";
+import React, { useLayoutEffect, useMemo, useState } from "react";
 
-import { Stage, Layer, Circle, Group, Rect, Text } from "react-konva";
-
-const gameConfig = {
-  width: 500,
-  height: 500,
-  backgroundColor: "#000000",
-  movementSpeed: 5,
-
-  // ball
-  ball: {
-    radius: 30,
-    color: "#ffffff"
-  },
-
-  // item
-  item: {
-    width: 15,
-    height: 60,
-    color: "#ffffff"
-  },
-
-  laser: {
-    active: true,
-    width: 1000,
-    height: 3,
-    color: "#ffffff",
-    opacity: 0.3
-  }
-};
+import { Stage, Layer, Circle, Group, Rect, Text, Arc } from "react-konva";
+import Bow from "./items/Bow";
+import { GAME_CONFIG } from "@/lib/settings";
+import Shield from "./items/Shield";
+import Laser from "./items/Laser";
 
 interface GameCanvasProps {
   players: Player[];
+  player: Player;
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
+const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
   const { a, s, d, w } = useWASD();
-  const { emitCoordinates } = useSocket();
-
-  const { setPlayer } = useStore.getState();
+  const { emitCoordinates, emitItem } = useSocket();
 
   const [position, setPosition] = useState({
     x: window.innerWidth / 2,
@@ -66,12 +41,12 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
   const coordinates = useMemo(() => {
     const x =
       position.x -
-      (window.innerWidth / 2 - gameConfig.width / 2) -
-      gameConfig.ball.radius;
+      (window.innerWidth / 2 - GAME_CONFIG.width / 2) -
+      GAME_CONFIG.ball.radius;
     const y =
       position.y -
-      (window.innerHeight / 2 - gameConfig.height / 2) -
-      gameConfig.ball.radius;
+      (window.innerHeight / 2 - GAME_CONFIG.height / 2) -
+      GAME_CONFIG.ball.radius;
 
     return { x, y, itemRotation };
   }, [position, itemRotation]);
@@ -80,45 +55,71 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
     setMousePosition({ x: evt.clientX, y: evt.clientY });
   };
 
+  const handleClick = (e: MouseEvent) => {
+    // on tab press, toggle player item between bow and shield
+    e.preventDefault();
+    if (e.button === 2) {
+      emitItem(player.currentItem === "bow" ? "shield" : "bow");
+    }
+  };
+
+  useLayoutEffect(() => {
+    const handleShift = (e: KeyboardEvent) => {
+      // on tab press, toggle player item between bow and shield
+      if (e.key === "Shift") {
+        emitItem(player.currentItem === "bow" ? "shield" : "bow");
+      }
+    };
+
+    window.addEventListener("keydown", handleShift);
+
+    return () => {
+      window.removeEventListener("keydown", handleShift);
+    };
+  }, [emitItem, player]);
+
   useFrameloop(async () => {
     if (a)
       setPosition((p) => ({
         ...p,
         x: Math.max(
-          p.x - gameConfig.movementSpeed,
-          window.innerWidth / 2 - gameConfig.width / 2 + gameConfig.ball.radius
+          p.x - GAME_CONFIG.movementSpeed,
+          window.innerWidth / 2 -
+            GAME_CONFIG.width / 2 +
+            GAME_CONFIG.ball.radius
         )
       }));
     if (d)
       setPosition((p) => ({
         ...p,
         x: Math.min(
-          p.x + gameConfig.movementSpeed,
-          window.innerWidth / 2 + gameConfig.width / 2 - gameConfig.ball.radius
+          p.x + GAME_CONFIG.movementSpeed,
+          window.innerWidth / 2 +
+            GAME_CONFIG.width / 2 -
+            GAME_CONFIG.ball.radius
         )
       }));
     if (w)
       setPosition((p) => ({
         ...p,
         y: Math.max(
-          p.y - gameConfig.movementSpeed,
+          p.y - GAME_CONFIG.movementSpeed,
           window.innerHeight / 2 -
-            gameConfig.height / 2 +
-            gameConfig.ball.radius
+            GAME_CONFIG.height / 2 +
+            GAME_CONFIG.ball.radius
         )
       }));
     if (s)
       setPosition((p) => ({
         ...p,
         y: Math.min(
-          p.y + gameConfig.movementSpeed,
+          p.y + GAME_CONFIG.movementSpeed,
           window.innerHeight / 2 +
-            gameConfig.height / 2 -
-            gameConfig.ball.radius
+            GAME_CONFIG.height / 2 -
+            GAME_CONFIG.ball.radius
         )
       }));
 
-    // setPlayer({ ...useStore.getState().player, coordinates });
     emitCoordinates(coordinates);
   });
 
@@ -128,6 +129,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
       height={window.innerHeight}
       className="bg-black"
       onPointerMove={handlePointerMove}
+      onMouseDown={(e) => handleClick(e.evt)}
       onContextMenu={(e) => e.evt.preventDefault()}
     >
       <Layer>
@@ -138,9 +140,15 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
           y={10}
         />
         <Text
-          text={`Players: ${players.length + 1}`}
+          text={`Current item: ${player.currentItem}`}
           x={10}
           y={30}
+          fill="white"
+        />
+        <Text
+          text={`Players: ${players.length + 1}`}
+          x={10}
+          y={50}
           fill="white"
         />
 
@@ -150,10 +158,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
         >
           <Group>
             <Rect
-              x={window.innerWidth / 2 - gameConfig.width / 2}
-              y={window.innerHeight / 2 - gameConfig.height / 2}
-              width={gameConfig.width}
-              height={gameConfig.height}
+              x={window.innerWidth / 2 - GAME_CONFIG.width / 2}
+              y={window.innerHeight / 2 - GAME_CONFIG.height / 2}
+              width={GAME_CONFIG.width}
+              height={GAME_CONFIG.height}
               fill="white"
               opacity={0.05}
             />
@@ -165,50 +173,23 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
                 key="player"
                 x={position.x}
                 y={position.y}
-                radius={gameConfig.ball.radius}
-                fill={useStore.getState().player.color || "#FFFFFF"}
-              />
-              <Rect
-                key="item"
-                x={
-                  position.x +
-                  Math.cos((itemRotation * Math.PI) / 180) *
-                    (gameConfig.ball.radius + gameConfig.item.width / 2)
-                }
-                y={
-                  position.y +
-                  Math.sin((itemRotation * Math.PI) / 180) *
-                    (gameConfig.ball.radius + gameConfig.item.width / 2)
-                }
-                width={gameConfig.item.width}
-                height={gameConfig.item.height}
-                fill="red"
-                offsetX={gameConfig.item.width / 2}
-                offsetY={gameConfig.item.height / 2}
-                rotation={itemRotation}
+                radius={GAME_CONFIG.ball.radius}
+                fill={player.color || "#FFFFFF"}
               />
 
+              {/* item */}
+              {player.currentItem === "bow" ? (
+                <Bow position={position} itemRotation={itemRotation} />
+              ) : (
+                <Shield position={position} itemRotation={itemRotation} />
+              )}
+
               {/* laser */}
-              {gameConfig.laser.active && (
-                <Rect
+              {GAME_CONFIG.laser.active && (
+                <Laser
                   key="playerLaser"
-                  x={
-                    position.x +
-                    Math.cos((itemRotation * Math.PI) / 180) *
-                      (gameConfig.ball.radius + gameConfig.laser.width / 2)
-                  }
-                  y={
-                    position.y +
-                    Math.sin((itemRotation * Math.PI) / 180) *
-                      (gameConfig.ball.radius + gameConfig.laser.width / 2)
-                  }
-                  width={gameConfig.laser.width}
-                  height={gameConfig.laser.height}
-                  fill={gameConfig.laser.color}
-                  opacity={gameConfig.laser.opacity}
-                  offsetX={gameConfig.laser.width / 2}
-                  offsetY={gameConfig.laser.height / 2}
-                  rotation={itemRotation}
+                  position={position}
+                  itemRotation={itemRotation}
                 />
               )}
             </Group>
@@ -219,14 +200,14 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
               const position = {
                 x:
                   window.innerWidth / 2 -
-                  gameConfig.width / 2 +
+                  GAME_CONFIG.width / 2 +
                   player.coordinates.x +
-                  gameConfig.ball.radius,
+                  GAME_CONFIG.ball.radius,
                 y:
                   window.innerHeight / 2 -
-                  gameConfig.height / 2 +
+                  GAME_CONFIG.height / 2 +
                   player.coordinates.y +
-                  gameConfig.ball.radius
+                  GAME_CONFIG.ball.radius
               };
 
               return (
@@ -235,56 +216,27 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
                     key={`ball_${player.id}`}
                     x={position.x}
                     y={position.y}
-                    radius={gameConfig.ball.radius}
+                    radius={GAME_CONFIG.ball.radius}
                     fill={player.color || "#EC5454"}
                   />
-                  <Rect
-                    x={
-                      position.x +
-                      Math.cos(
-                        (player.coordinates.itemRotation * Math.PI) / 180
-                      ) *
-                        (gameConfig.ball.radius + gameConfig.item.width / 2)
-                    }
-                    y={
-                      position.y +
-                      Math.sin(
-                        (player.coordinates.itemRotation * Math.PI) / 180
-                      ) *
-                        (gameConfig.ball.radius + gameConfig.item.width / 2)
-                    }
-                    width={gameConfig.item.width}
-                    height={gameConfig.item.height}
-                    fill="red"
-                    offsetX={gameConfig.item.width / 2}
-                    offsetY={gameConfig.item.height / 2}
-                    rotation={player.coordinates.itemRotation}
-                  />
 
-                  {gameConfig.laser.active && (
-                    <Rect
+                  {player.currentItem === "bow" ? (
+                    <Bow
+                      position={position}
+                      itemRotation={player.coordinates.itemRotation}
+                    />
+                  ) : (
+                    <Shield
+                      position={position}
+                      itemRotation={player.coordinates.itemRotation}
+                    />
+                  )}
+
+                  {GAME_CONFIG.laser.active && (
+                    <Laser
                       key={`laser_${player.id}`}
-                      x={
-                        position.x +
-                        Math.cos(
-                          (player.coordinates.itemRotation * Math.PI) / 180
-                        ) *
-                          (gameConfig.ball.radius + gameConfig.laser.width / 2)
-                      }
-                      y={
-                        position.y +
-                        Math.sin(
-                          (player.coordinates.itemRotation * Math.PI) / 180
-                        ) *
-                          (gameConfig.ball.radius + gameConfig.laser.width / 2)
-                      }
-                      width={gameConfig.laser.width}
-                      height={gameConfig.laser.height}
-                      fill={gameConfig.laser.color}
-                      opacity={gameConfig.laser.opacity}
-                      offsetX={gameConfig.laser.width / 2}
-                      offsetY={gameConfig.laser.height / 2}
-                      rotation={player.coordinates.itemRotation}
+                      position={position}
+                      itemRotation={player.coordinates.itemRotation}
                     />
                   )}
                 </Group>

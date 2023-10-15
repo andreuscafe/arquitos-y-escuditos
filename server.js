@@ -44,7 +44,8 @@ io.on("connection", (socket) => {
       players.push({
         id: socket.id,
         coordinates: { x: 0, y: 0, itemRotation: 0 },
-        color: pastelColors[Math.floor(Math.random() * pastelColors.length)]
+        color: pastelColors[Math.floor(Math.random() * pastelColors.length)],
+        currentItem: "bow"
       });
     }
 
@@ -87,6 +88,18 @@ io.on("connection", (socket) => {
       return;
     }
     players[index].coordinates = data.coordinates;
+
+    io.sockets.in(data.roomId).emit("players", players);
+  });
+
+  socket.on("send_item", (data) => {
+    console.log(data, `ITEM of player ${socket.id}`);
+
+    const index = players.findIndex((player) => player.id === socket.id);
+    if (index === -1) {
+      return;
+    }
+    players[index].currentItem = data.currentItem;
 
     io.sockets.in(data.roomId).emit("players", players);
   });

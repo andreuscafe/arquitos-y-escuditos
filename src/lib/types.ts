@@ -9,4 +9,5 @@ type Player = {
   username?: string;
   color?: string;
   coordinates: PlayerCoordinates;
+  currentItem: "bow" | "shield";
 };

@@ -30,7 +30,8 @@ const useStore = create<Store>((set) => ({
       y: 0,
       itemRotation: 0
     },
-    color: "#ffffff"
+    color: "#ffffff",
+    currentItem: "bow"
   },
   setPlayer: (player: Store["player"]) => set({ player }),
 
