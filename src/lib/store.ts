@@ -11,7 +11,7 @@ type Store = {
   username: string;
   setUsername: (username: string) => void;
 
-  player: PlayerCoordinates;
+  player: Player;
   setPlayer: (player: Store["player"]) => void;
 
   players: Player[];
@@ -24,9 +24,13 @@ const useStore = create<Store>((set) => ({
   setUsername: (username) => set({ username }),
 
   player: {
-    x: 0,
-    y: 0,
-    itemRotation: 0
+    id: "player",
+    coordinates: {
+      x: 0,
+      y: 0,
+      itemRotation: 0
+    },
+    color: "#ffffff"
   },
   setPlayer: (player: Store["player"]) => set({ player }),
 

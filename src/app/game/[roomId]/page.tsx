@@ -1,16 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import style from "./chat.module.scss";
 import useStore from "@/lib/store";
 import { useParams } from "next/navigation";
 import GameCanvas from "@/components/GameCanvas";
-
-interface IMsgDataTypes {
-  roomId: String | number;
-  user: String;
-  msg: String;
-  time: String;
-}
 
 const GamePage = () => {
   const params = useParams();
@@ -22,13 +14,22 @@ const GamePage = () => {
     players: state.players
   }));
 
-  const setPlayers = useStore.getState().setPlayers;
+  const { setPlayers, setPlayer } = useStore.getState();
 
   useEffect(() => {
     socket.on("players", (data: Player[]) => {
       const filteredPlayers = data.filter((player) => player.id !== socket.id);
-
       setPlayers(filteredPlayers);
+
+      const currentPlayer = data.find(
+        (player) => player.id === socket.id
+      ) as Player;
+      setPlayer(currentPlayer);
+
+      if (useStore.getState().player.id !== socket.id) {
+        console.log("setting player");
+        setPlayer(data.find((player) => player.id === socket.id) as Player);
+      }
     });
 
     socket.emit("join_room", roomId);

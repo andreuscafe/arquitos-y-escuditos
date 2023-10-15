@@ -16,6 +16,19 @@ const io = new Server(httpServer, {
 const players = [];
 const rooms = [];
 
+const pastelColors = [
+  "#ff8c82", // light pink
+  "#ffb347", // light orange
+  "#ffff99", // light yellow
+  "#8affb7", // light green
+  "#82c4ff", // light blue
+  "#c49aec", // light purple
+  "#ff99ac", // light red
+  "#ffc2a1", // light peach
+  "#d4e157", // light lime
+  "#aed581" // light olive
+];
+
 io.on("connection", (socket) => {
   console.log("A user connected:", socket.id);
 
@@ -30,7 +43,8 @@ io.on("connection", (socket) => {
     if (!players.find((player) => player.id === socket.id)) {
       players.push({
         id: socket.id,
-        coordinates: { x: 0, y: 0, itemRotation: 0 }
+        coordinates: { x: 0, y: 0, itemRotation: 0 },
+        color: pastelColors[Math.floor(Math.random() * pastelColors.length)]
       });
     }
 

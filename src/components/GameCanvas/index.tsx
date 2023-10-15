@@ -3,13 +3,14 @@
 import useFrameloop from "@/lib/hooks/useFrameloop";
 import useSocket from "@/lib/hooks/useSocket";
 import { useWASD } from "@/lib/hooks/useWASD";
+import useStore from "@/lib/store";
 import React, { useMemo, useState } from "react";
 
 import { Stage, Layer, Circle, Group, Rect, Text } from "react-konva";
 
 const gameConfig = {
-  width: 800,
-  height: 800,
+  width: 500,
+  height: 500,
   backgroundColor: "#000000",
   movementSpeed: 5,
 
@@ -24,6 +25,14 @@ const gameConfig = {
     width: 15,
     height: 60,
     color: "#ffffff"
+  },
+
+  laser: {
+    active: true,
+    width: 1000,
+    height: 3,
+    color: "#ffffff",
+    opacity: 0.3
   }
 };
 
@@ -34,6 +43,8 @@ interface GameCanvasProps {
 const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
   const { a, s, d, w } = useWASD();
   const { emitCoordinates } = useSocket();
+
+  const { setPlayer } = useStore.getState();
 
   const [position, setPosition] = useState({
     x: window.innerWidth / 2,
@@ -107,6 +118,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
         )
       }));
 
+    // setPlayer({ ...useStore.getState().player, coordinates });
     emitCoordinates(coordinates);
   });
 
@@ -154,7 +166,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
                 x={position.x}
                 y={position.y}
                 radius={gameConfig.ball.radius}
-                fill="white"
+                fill={useStore.getState().player.color || "#FFFFFF"}
               />
               <Rect
                 key="item"
@@ -175,6 +187,30 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
                 offsetY={gameConfig.item.height / 2}
                 rotation={itemRotation}
               />
+
+              {/* laser */}
+              {gameConfig.laser.active && (
+                <Rect
+                  key="playerLaser"
+                  x={
+                    position.x +
+                    Math.cos((itemRotation * Math.PI) / 180) *
+                      (gameConfig.ball.radius + gameConfig.laser.width / 2)
+                  }
+                  y={
+                    position.y +
+                    Math.sin((itemRotation * Math.PI) / 180) *
+                      (gameConfig.ball.radius + gameConfig.laser.width / 2)
+                  }
+                  width={gameConfig.laser.width}
+                  height={gameConfig.laser.height}
+                  fill={gameConfig.laser.color}
+                  opacity={gameConfig.laser.opacity}
+                  offsetX={gameConfig.laser.width / 2}
+                  offsetY={gameConfig.laser.height / 2}
+                  rotation={itemRotation}
+                />
+              )}
             </Group>
           </Group>
 
@@ -196,6 +232,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
               return (
                 <Group key={player.id}>
                   <Circle
+                    key={`ball_${player.id}`}
                     x={position.x}
                     y={position.y}
                     radius={gameConfig.ball.radius}
@@ -223,6 +260,33 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players }) => {
                     offsetY={gameConfig.item.height / 2}
                     rotation={player.coordinates.itemRotation}
                   />
+
+                  {gameConfig.laser.active && (
+                    <Rect
+                      key={`laser_${player.id}`}
+                      x={
+                        position.x +
+                        Math.cos(
+                          (player.coordinates.itemRotation * Math.PI) / 180
+                        ) *
+                          (gameConfig.ball.radius + gameConfig.laser.width / 2)
+                      }
+                      y={
+                        position.y +
+                        Math.sin(
+                          (player.coordinates.itemRotation * Math.PI) / 180
+                        ) *
+                          (gameConfig.ball.radius + gameConfig.laser.width / 2)
+                      }
+                      width={gameConfig.laser.width}
+                      height={gameConfig.laser.height}
+                      fill={gameConfig.laser.color}
+                      opacity={gameConfig.laser.opacity}
+                      offsetX={gameConfig.laser.width / 2}
+                      offsetY={gameConfig.laser.height / 2}
+                      rotation={player.coordinates.itemRotation}
+                    />
+                  )}
                 </Group>
               );
             })}
