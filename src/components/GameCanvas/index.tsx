@@ -4,9 +4,10 @@ import useFrameloop from "@/lib/hooks/useFrameloop";
 import useSocket from "@/lib/hooks/useSocket";
 import { useWASD } from "@/lib/hooks/useWASD";
 import useStore from "@/lib/store";
-import React, { useLayoutEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 import { Stage, Layer, Circle, Group, Rect, Text, Arc } from "react-konva";
+import Konva from "konva";
 import Bow from "./items/Bow";
 import { GAME_CONFIG } from "@/lib/settings";
 import Shield from "./items/Shield";
@@ -15,13 +16,17 @@ import Laser from "./items/Laser";
 interface GameCanvasProps {
   players: Player[];
   player: Player;
+  arrows: Arrow[];
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
-  const { a, s, d, w } = useWASD();
-  const { emitCoordinates, emitItem } = useSocket();
+const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
+  const arenaRef = React.useRef(null as any);
+  const arrowsRef = React.useRef({} as any);
 
-  const [position, setPosition] = useState({
+  const { a, s, d, w } = useWASD();
+  const { emitCoordinates, emitItem, emitArrow } = useSocket();
+
+  const [playerPosition, setPlayerPosition] = useState({
     x: window.innerWidth / 2,
     y: window.innerHeight / 2
   });
@@ -40,16 +45,16 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
 
   const coordinates = useMemo(() => {
     const x =
-      position.x -
+      playerPosition.x -
       (window.innerWidth / 2 - GAME_CONFIG.width / 2) -
       GAME_CONFIG.ball.radius;
     const y =
-      position.y -
+      playerPosition.y -
       (window.innerHeight / 2 - GAME_CONFIG.height / 2) -
       GAME_CONFIG.ball.radius;
 
     return { x, y, itemRotation };
-  }, [position, itemRotation]);
+  }, [playerPosition, itemRotation]);
 
   const handlePointerMove = ({ evt }: { evt: PointerEvent }) => {
     setMousePosition({ x: evt.clientX, y: evt.clientY });
@@ -58,8 +63,29 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
   const handleClick = (e: MouseEvent) => {
     // on tab press, toggle player item between bow and shield
     e.preventDefault();
-    if (e.button === 2) {
-      emitItem(player.currentItem === "bow" ? "shield" : "bow");
+    // if (e.button === 2) {
+    //   emitItem(player.currentItem === "bow" ? "shield" : "bow");
+    // }
+
+    if ((e.button === 0 || e.button === 2) && player.currentItem === "bow") {
+      // console.log("shoot from", coordinates.x, coordinates.y, "to ", e.clientX, e.clientY);
+      const arrow = {
+        coordinates: {
+          start: {
+            x: coordinates.x,
+            y: coordinates.y
+          },
+          degree: itemRotation
+        },
+        color: player.color,
+        id: `arrow_${Math.random() * 100000000000000000}`
+      } as Arrow;
+
+      // useStore.getState().setArrows([...useStore.getState().arrows, arrow]);
+
+      emitArrow(arrow);
+
+      // console.log("emitting arrow", arrow);
     }
   };
 
@@ -80,7 +106,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
 
   useFrameloop(async () => {
     if (a)
-      setPosition((p) => ({
+      setPlayerPosition((p) => ({
         ...p,
         x: Math.max(
           p.x - GAME_CONFIG.movementSpeed,
@@ -90,7 +116,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
         )
       }));
     if (d)
-      setPosition((p) => ({
+      setPlayerPosition((p) => ({
         ...p,
         x: Math.min(
           p.x + GAME_CONFIG.movementSpeed,
@@ -100,7 +126,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
         )
       }));
     if (w)
-      setPosition((p) => ({
+      setPlayerPosition((p) => ({
         ...p,
         y: Math.max(
           p.y - GAME_CONFIG.movementSpeed,
@@ -110,7 +136,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
         )
       }));
     if (s)
-      setPosition((p) => ({
+      setPlayerPosition((p) => ({
         ...p,
         y: Math.min(
           p.y + GAME_CONFIG.movementSpeed,
@@ -122,6 +148,24 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
 
     emitCoordinates(coordinates);
   });
+
+  useLayoutEffect(() => {
+    arrows.forEach((arrow) => {
+      if (
+        arrowsRef.current[arrow.id] &&
+        !arrowsRef.current[arrow.id].isAnimating
+      ) {
+        arrowsRef.current[arrow.id].to({
+          width: 1000,
+          duration: 1,
+          opacity: 0,
+          easing: Konva.Easings.EaseOut
+        });
+
+        arrowsRef.current[arrow.id].isAnimating = true;
+      }
+    });
+  }, [arrows]);
 
   return (
     <Stage
@@ -153,11 +197,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
         />
 
         <Group
-          x={window.innerWidth / 2 - position.x}
-          y={window.innerHeight / 2 - position.y}
+          x={window.innerWidth / 2 - playerPosition.x}
+          y={window.innerHeight / 2 - playerPosition.y}
         >
           <Group>
             <Rect
+              key="arena"
+              ref={arenaRef}
               x={window.innerWidth / 2 - GAME_CONFIG.width / 2}
               y={window.innerHeight / 2 - GAME_CONFIG.height / 2}
               width={GAME_CONFIG.width}
@@ -165,36 +211,77 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
               fill="white"
               opacity={0.05}
             />
+
+            {/* Arrows */}
+            {arrows.map((arrow) => {
+              return (
+                <Rect
+                  ref={(arr) => {
+                    if (arr) {
+                      arrowsRef.current[arrow.id] = arr;
+                    } else {
+                      delete arrowsRef.current[arrow.id];
+                    }
+                  }}
+                  key={arrow.id}
+                  x={
+                    arrow.coordinates.start.x +
+                    window.innerWidth / 2 -
+                    GAME_CONFIG.width / 2 +
+                    GAME_CONFIG.ball.radius
+                  }
+                  y={
+                    arrow.coordinates.start.y +
+                    window.innerHeight / 2 -
+                    GAME_CONFIG.height / 2 +
+                    GAME_CONFIG.ball.radius
+                  }
+                  width={0}
+                  height={3}
+                  fill="white"
+                  rotation={arrow.coordinates.degree}
+                />
+              );
+            })}
           </Group>
 
           <Group>
             <Group>
               <Circle
                 key="player"
-                x={position.x}
-                y={position.y}
+                x={playerPosition.x}
+                y={playerPosition.y}
                 radius={GAME_CONFIG.ball.radius}
                 fill={player.color || "#FFFFFF"}
               />
 
               {/* item */}
               {player.currentItem === "bow" ? (
-                <Bow position={position} itemRotation={itemRotation} />
+                <Bow
+                  key="player-bow"
+                  position={playerPosition}
+                  itemRotation={itemRotation}
+                />
               ) : (
-                <Shield position={position} itemRotation={itemRotation} />
+                <Shield
+                  key="player-shield"
+                  position={playerPosition}
+                  itemRotation={itemRotation}
+                />
               )}
 
               {/* laser */}
               {GAME_CONFIG.laser.active && (
                 <Laser
-                  key="playerLaser"
-                  position={position}
+                  key="player-laser"
+                  position={playerPosition}
                   itemRotation={itemRotation}
                 />
               )}
             </Group>
           </Group>
 
+          {/* Other players */}
           <Group>
             {players.map((player) => {
               const position = {
@@ -222,11 +309,13 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
 
                   {player.currentItem === "bow" ? (
                     <Bow
+                      key={`${player.id}-bow`}
                       position={position}
                       itemRotation={player.coordinates.itemRotation}
                     />
                   ) : (
                     <Shield
+                      key={`${player.id}-shield`}
                       position={position}
                       itemRotation={player.coordinates.itemRotation}
                     />
@@ -234,7 +323,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player }) => {
 
                   {GAME_CONFIG.laser.active && (
                     <Laser
-                      key={`laser_${player.id}`}
+                      key={`${player.id}-laser`}
                       position={position}
                       itemRotation={player.coordinates.itemRotation}
                     />

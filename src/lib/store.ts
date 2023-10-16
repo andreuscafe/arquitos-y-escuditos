@@ -16,6 +16,9 @@ type Store = {
 
   players: Player[];
   setPlayers: (players: Store["players"]) => void;
+
+  arrows: Arrow[];
+  setArrows: (arrows: Store["arrows"]) => void;
 };
 
 const useStore = create<Store>((set) => ({
@@ -36,7 +39,10 @@ const useStore = create<Store>((set) => ({
   setPlayer: (player: Store["player"]) => set({ player }),
 
   players: [],
-  setPlayers: (players: Store["players"]) => set({ players })
+  setPlayers: (players: Store["players"]) => set({ players }),
+
+  arrows: [],
+  setArrows: (arrows: Store["arrows"]) => set({ arrows })
 }));
 
 export default useStore;

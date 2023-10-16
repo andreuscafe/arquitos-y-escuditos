@@ -10,13 +10,14 @@ const GamePage = () => {
 
   const roomId = params.roomId as string;
 
-  const { socket, players, player } = useStore((state) => ({
+  const { socket, players, player, arrows } = useStore((state) => ({
     socket: state.socket,
     players: state.players,
-    player: state.player
+    player: state.player,
+    arrows: state.arrows
   }));
 
-  const { setPlayers, setPlayer } = useStore.getState();
+  const { setPlayers, setPlayer, setArrows } = useStore.getState();
 
   useEffect(() => {
     socket.on("players", (data: Player[]) => {
@@ -34,6 +35,10 @@ const GamePage = () => {
       }
     });
 
+    socket.on("arrows", (data: Arrow[]) => {
+      setArrows(data);
+    });
+
     socket.emit("join_room", roomId);
 
     socket.on("connect", () => {
@@ -45,11 +50,11 @@ const GamePage = () => {
       socket.off("receive_msg");
       socket.off("connect");
     };
-  }, [socket, roomId, setPlayers, setPlayer]);
+  }, [socket, roomId, setPlayers, setPlayer, setArrows]);
 
   return (
     <div className="h-screen w-screen bg-black">
-      <GameCanvas players={players} player={player} />
+      <GameCanvas players={players} player={player} arrows={arrows} />
     </div>
   );
 };

@@ -11,3 +11,15 @@ type Player = {
   coordinates: PlayerCoordinates;
   currentItem: "bow" | "shield";
 };
+
+type Arrow = {
+  id: string;
+  coordinates: {
+    start: {
+      x: number;
+      y: number;
+    };
+    degree: number;
+  };
+  color: string;
+};

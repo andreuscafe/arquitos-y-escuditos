@@ -14,6 +14,7 @@ const io = new Server(httpServer, {
 });
 
 const players = [];
+const arrows = [];
 const rooms = [];
 
 const pastelColors = [
@@ -81,8 +82,6 @@ io.on("connection", (socket) => {
 
   // game logic
   socket.on("send_coordinates", (data) => {
-    // console.log(data, `COORDS of player ${socket.id}`);
-
     const index = players.findIndex((player) => player.id === socket.id);
     if (index === -1) {
       return;
@@ -93,8 +92,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_item", (data) => {
-    console.log(data, `ITEM of player ${socket.id}`);
-
     const index = players.findIndex((player) => player.id === socket.id);
     if (index === -1) {
       return;
@@ -102,6 +99,18 @@ io.on("connection", (socket) => {
     players[index].currentItem = data.currentItem;
 
     io.sockets.in(data.roomId).emit("players", players);
+  });
+
+  socket.on("send_arrow", (data) => {
+    arrows.unshift(data.arrow);
+    io.sockets.in(data.roomId).emit("arrows", arrows);
+
+    setTimeout(function () {
+      const index = arrows.findIndex((arrow) => arrow.id === data.id);
+      arrows.splice(index, 1);
+
+      io.sockets.in(data.roomId).emit("arrows", arrows);
+    }, 1000);
   });
 
   socket.on("game_start", (roomId) => {
@@ -117,7 +126,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_msg", (data) => {
-    console.log(data, "DATA");
     //This will send a message to a specific room ID
     io.to(data.roomId).emit("receive_msg", data);
   });

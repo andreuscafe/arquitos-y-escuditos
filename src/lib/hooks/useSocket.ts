@@ -42,7 +42,16 @@ const useSocket = () => {
     socket.emit("send_item", data);
   };
 
-  return { emitCoordinates, emitItem };
+  const emitArrow = (arrow: Arrow) => {
+    const data = {
+      roomId,
+      arrow
+    };
+
+    socket.emit("send_arrow", data);
+  };
+
+  return { emitCoordinates, emitItem, emitArrow };
 };
 
 export default useSocket;

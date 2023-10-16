@@ -1,6 +1,6 @@
 export const GAME_CONFIG = {
-  width: 500,
-  height: 500,
+  width: 1200,
+  height: 1200,
   backgroundColor: "#000000",
   movementSpeed: 5,
 
@@ -25,7 +25,7 @@ export const GAME_CONFIG = {
   },
 
   laser: {
-    active: true,
+    active: false,
     width: 1000,
     height: 3,
     color: "#ffffff",
