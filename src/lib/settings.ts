@@ -1,8 +1,16 @@
 export const GAME_CONFIG = {
+  debug: {
+    laser: false,
+    collision: false,
+    arrow: false
+  },
+
   width: 1200,
   height: 1200,
   backgroundColor: "#000000",
   movementSpeed: 5,
+
+  arrowTravelDistance: 500,
 
   // ball
   ball: {

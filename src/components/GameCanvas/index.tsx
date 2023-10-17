@@ -12,6 +12,8 @@ import Bow from "./items/Bow";
 import { GAME_CONFIG } from "@/lib/settings";
 import Shield from "./items/Shield";
 import Laser from "./items/Laser";
+import { Arrow } from "./actors/Arrow";
+import { Arrows } from "./actors/Arrows";
 
 interface GameCanvasProps {
   players: Player[];
@@ -21,7 +23,6 @@ interface GameCanvasProps {
 
 const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
   const arenaRef = React.useRef(null as any);
-  const arrowsRef = React.useRef({} as any);
 
   const { a, s, d, w } = useWASD();
   const { emitCoordinates, emitItem, emitArrow } = useSocket();
@@ -149,29 +150,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
     emitCoordinates(coordinates);
   });
 
-  useLayoutEffect(() => {
-    arrows.forEach((arrow) => {
-      if (
-        arrowsRef.current[arrow.id] &&
-        !arrowsRef.current[arrow.id].isAnimating
-      ) {
-        arrowsRef.current[arrow.id].to({
-          width: 1000,
-          duration: 1,
-          opacity: 0,
-          easing: Konva.Easings.EaseOut
-        });
-
-        arrowsRef.current[arrow.id].isAnimating = true;
-      }
-    });
-  }, [arrows]);
-
   return (
     <Stage
       width={window.innerWidth}
       height={window.innerHeight}
-      className="bg-black"
+      className="bg-neutral-900"
       onPointerMove={handlePointerMove}
       onMouseDown={(e) => handleClick(e.evt)}
       onContextMenu={(e) => e.evt.preventDefault()}
@@ -213,36 +196,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
             />
 
             {/* Arrows */}
-            {arrows.map((arrow) => {
-              return (
-                <Rect
-                  ref={(arr) => {
-                    if (arr) {
-                      arrowsRef.current[arrow.id] = arr;
-                    } else {
-                      delete arrowsRef.current[arrow.id];
-                    }
-                  }}
-                  key={arrow.id}
-                  x={
-                    arrow.coordinates.start.x +
-                    window.innerWidth / 2 -
-                    GAME_CONFIG.width / 2 +
-                    GAME_CONFIG.ball.radius
-                  }
-                  y={
-                    arrow.coordinates.start.y +
-                    window.innerHeight / 2 -
-                    GAME_CONFIG.height / 2 +
-                    GAME_CONFIG.ball.radius
-                  }
-                  width={0}
-                  height={3}
-                  fill="white"
-                  rotation={arrow.coordinates.degree}
-                />
-              );
-            })}
+            <Arrows data={arrows} />
           </Group>
 
           <Group>
