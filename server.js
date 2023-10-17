@@ -2,11 +2,13 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
+require("dotenv").config();
+
 const httpServer = http.createServer();
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://10.0.0.130:3000", // Replace with your frontend URL
+    origin: process.env.FRONT_URL, // Replace with your frontend URL
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true
@@ -133,5 +135,7 @@ io.on("connection", (socket) => {
 
 const PORT = process.env.PORT || 3002;
 httpServer.listen(PORT, () => {
-  console.log(`Socket.io server is running on port ${PORT}`);
+  console.log(
+    `Socket.io server is running on port ${PORT} and ready to connect from ${process.env.FRONT_URL}`
+  );
 });

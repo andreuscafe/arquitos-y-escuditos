@@ -1,8 +1,9 @@
 import { create } from "zustand";
 
 import io from "socket.io-client";
+import { env } from "process";
 
-export const socket = io("http://10.0.0.130:3002");
+export const socket = io(env.SOCKET_URL || "http://localhost:3002");
 socket.connect();
 
 type Store = {
