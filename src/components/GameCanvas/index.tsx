@@ -14,19 +14,28 @@ import Shield from "./items/Shield";
 import Laser from "./items/Laser";
 import { Arrow } from "./actors/Arrow";
 import { Arrows } from "./actors/Arrows";
+import { arenaToCoords } from "@/lib/utils";
+import { Hits } from "./actors/Hits";
 
 interface GameCanvasProps {
   players: Player[];
   player: Player;
   arrows: Arrow[];
+  hits: Hit[];
 }
 
-const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
-  const arenaRef = React.useRef(null as any);
+const GameCanvas: React.FC<GameCanvasProps> = ({
+  players,
+  player,
+  arrows,
+  hits
+}) => {
+  const cameraRef = React.useRef(null as any);
 
   const { a, s, d, w } = useWASD();
   const { emitCoordinates, emitItem, emitArrow } = useSocket();
 
+  // Player position in viewport units
   const [playerPosition, setPlayerPosition] = useState({
     x: window.innerWidth / 2,
     y: window.innerHeight / 2
@@ -35,6 +44,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
     x: window.innerWidth / 2,
     y: window.innerHeight / 2
   });
+  const [isShooting, setIsShooting] = useState(false);
 
   const itemRotation = useMemo(() => {
     const deg = Math.atan2(
@@ -44,6 +54,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
     return (deg * 180) / Math.PI;
   }, [mousePosition]);
 
+  // Player position in arena units
   const coordinates = useMemo(() => {
     const x =
       playerPosition.x -
@@ -64,12 +75,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
   const handleClick = (e: MouseEvent) => {
     // on tab press, toggle player item between bow and shield
     e.preventDefault();
-    // if (e.button === 2) {
-    //   emitItem(player.currentItem === "bow" ? "shield" : "bow");
-    // }
+    if (e.button === 2) {
+      emitItem(player.currentItem === "bow" ? "shield" : "bow");
+    }
 
-    if ((e.button === 0 || e.button === 2) && player.currentItem === "bow") {
-      // console.log("shoot from", coordinates.x, coordinates.y, "to ", e.clientX, e.clientY);
+    if (e.button === 0 && player.currentItem === "bow") {
       const arrow = {
         coordinates: {
           start: {
@@ -78,15 +88,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
           },
           degree: itemRotation
         },
-        color: player.color,
+        player: player.id,
         id: `arrow_${Math.random() * 100000000000000000}`
       } as Arrow;
 
-      // useStore.getState().setArrows([...useStore.getState().arrows, arrow]);
-
       emitArrow(arrow);
-
-      // console.log("emitting arrow", arrow);
     }
   };
 
@@ -147,6 +153,26 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
         )
       }));
 
+    useStore.getState().setCamera({
+      x: cameraRef.current.x(),
+      y: cameraRef.current.y()
+    });
+
+    // if (isShooting) {
+    //   const arrow = {
+    //     coordinates: {
+    //       start: {
+    //         x: coordinates.x,
+    //         y: coordinates.y
+    //       },
+    //       degree: itemRotation
+    //     },
+    //     color: player.color,
+    //     id: `arrow_${Math.random() * 100000000000000000}`
+    //   } as Arrow;
+    //   emitArrow(arrow);
+    // }
+
     emitCoordinates(coordinates);
   });
 
@@ -156,7 +182,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
       height={window.innerHeight}
       className="bg-neutral-900"
       onPointerMove={handlePointerMove}
-      onMouseDown={(e) => handleClick(e.evt)}
+      onMouseDown={(e) => {
+        setIsShooting(true);
+        handleClick(e.evt);
+      }}
+      onMouseUp={() => setIsShooting(false)}
       onContextMenu={(e) => e.evt.preventDefault()}
     >
       <Layer>
@@ -178,15 +208,21 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
           y={50}
           fill="white"
         />
+        <Text
+          text={`Ping: ${useStore.getState().ping}`}
+          x={10}
+          y={70}
+          fill="white"
+        />
 
         <Group
           x={window.innerWidth / 2 - playerPosition.x}
           y={window.innerHeight / 2 - playerPosition.y}
+          ref={cameraRef}
         >
           <Group>
             <Rect
               key="arena"
-              ref={arenaRef}
               x={window.innerWidth / 2 - GAME_CONFIG.width / 2}
               y={window.innerHeight / 2 - GAME_CONFIG.height / 2}
               width={GAME_CONFIG.width}
@@ -286,6 +322,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ players, player, arrows }) => {
               );
             })}
           </Group>
+
+          {/* Hits */}
+          <Hits data={hits} />
         </Group>
       </Layer>
     </Stage>

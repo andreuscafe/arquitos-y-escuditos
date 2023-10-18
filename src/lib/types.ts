@@ -14,6 +14,7 @@ type Player = {
 
 type Arrow = {
   id: string;
+  player: string;
   coordinates: {
     start: {
       x: number;
@@ -21,5 +22,12 @@ type Arrow = {
     };
     degree: number;
   };
-  color: string;
+};
+
+type Hit = {
+  id: string;
+  coordinates: {
+    x: number;
+    y: number;
+  };
 };

@@ -1,9 +1,10 @@
 import { create } from "zustand";
 
 import io from "socket.io-client";
-import { env } from "process";
 
-export const socket = io(env.SOCKET_URL || "http://localhost:3002");
+export const socket = io(
+  process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001"
+);
 socket.connect();
 
 type Store = {
@@ -20,6 +21,18 @@ type Store = {
 
   arrows: Arrow[];
   setArrows: (arrows: Store["arrows"]) => void;
+
+  camera: {
+    x: number;
+    y: number;
+  };
+  setCamera: (camera: Store["camera"]) => void;
+
+  ping: number;
+  setPing: (ping: Store["ping"]) => void;
+
+  hits: Hit[];
+  setHits: (hits: Store["hits"]) => void;
 };
 
 const useStore = create<Store>((set) => ({
@@ -43,7 +56,19 @@ const useStore = create<Store>((set) => ({
   setPlayers: (players: Store["players"]) => set({ players }),
 
   arrows: [],
-  setArrows: (arrows: Store["arrows"]) => set({ arrows })
+  setArrows: (arrows: Store["arrows"]) => set({ arrows }),
+
+  camera: {
+    x: 0,
+    y: 0
+  },
+  setCamera: (camera: Store["camera"]) => set({ camera }),
+
+  ping: 0,
+  setPing: (ping: Store["ping"]) => set({ ping }),
+
+  hits: [],
+  setHits: (hits: Store["hits"]) => set({ hits })
 }));
 
 export default useStore;

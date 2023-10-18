@@ -1,23 +1,27 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import useStore from "@/lib/store";
 import { useParams } from "next/navigation";
 import GameCanvas from "@/components/GameCanvas";
 import _ from "lodash";
+import useSocket from "@/lib/hooks/useSocket";
 
 const GamePage = () => {
   const params = useParams();
 
   const roomId = params.roomId as string;
+  const intervalRef = useRef(null as any);
 
-  const { socket, players, player, arrows } = useStore((state) => ({
-    socket: state.socket,
+  const { players, player, arrows, hits } = useStore((state) => ({
     players: state.players,
     player: state.player,
-    arrows: state.arrows
+    arrows: state.arrows,
+    hits: state.hits
   }));
 
-  const { setPlayers, setPlayer, setArrows } = useStore.getState();
+  const { socket, emitPing } = useSocket();
+
+  const { setPlayers, setPlayer, setArrows, setHits } = useStore.getState();
 
   useEffect(() => {
     socket.on("players", (data: Player[]) => {
@@ -39,22 +43,41 @@ const GamePage = () => {
       setArrows(data);
     });
 
+    socket.on("hits", (data: Hit[]) => {
+      setHits(data);
+    });
+
+    socket.on("pong", (data: { timestamp: number }) => {
+      useStore.getState().setPing(Date.now() - data.timestamp);
+    });
+
     socket.emit("join_room", roomId);
 
     socket.on("connect", () => {
       socket.emit("join_room", roomId);
     });
 
+    intervalRef.current = setInterval(() => {
+      emitPing();
+    }, 1000);
+
     return () => {
       socket.emit("exit_room", roomId);
       socket.off("receive_msg");
       socket.off("connect");
+
+      clearInterval(intervalRef.current);
     };
-  }, [socket, roomId, setPlayers, setPlayer, setArrows]);
+  }, [roomId, setPlayers, setPlayer, setArrows]);
 
   return (
     <div className="h-screen w-screen bg-black">
-      <GameCanvas players={players} player={player} arrows={arrows} />
+      <GameCanvas
+        players={players}
+        player={player}
+        arrows={arrows}
+        hits={hits}
+      />
     </div>
   );
 };

@@ -3,7 +3,7 @@ import useStore from "../store";
 import { useParams } from "next/navigation";
 
 const useSocket = () => {
-  const { socket } = useStore((s) => ({ socket: s.socket }));
+  const { socket } = useStore.getState();
 
   const params = useParams();
   const roomId = params.roomId as string;
@@ -51,7 +51,22 @@ const useSocket = () => {
     socket.emit("send_arrow", data);
   };
 
-  return { emitCoordinates, emitItem, emitArrow };
+  const emitHit = (hit: Hit) => {
+    const data = {
+      roomId,
+      hit
+    };
+
+    socket.emit("send_hit", data);
+  };
+
+  const emitPing = () => {
+    socket.emit("ping", {
+      timestamp: Date.now()
+    });
+  };
+
+  return { emitCoordinates, emitItem, emitArrow, emitPing, emitHit, socket };
 };
 
 export default useSocket;

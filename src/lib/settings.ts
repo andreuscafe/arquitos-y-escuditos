@@ -2,15 +2,18 @@ export const GAME_CONFIG = {
   debug: {
     laser: false,
     collision: false,
-    arrow: false
+    arrow: false,
+    preventCollision: false
   },
 
-  width: 1200,
-  height: 1200,
+  width: 700,
+  height: 700,
   backgroundColor: "#000000",
   movementSpeed: 5,
+  arrowSpeed: 1500,
+  cooldown: 500,
 
-  arrowTravelDistance: 500,
+  arrowTravelDistance: 1000,
 
   // ball
   ball: {

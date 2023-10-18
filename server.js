@@ -2,13 +2,16 @@ const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 
-require("dotenv").config();
+require("dotenv").config({
+  path: `.env.local`,
+  override: true
+});
 
 const httpServer = http.createServer();
 
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONT_URL, // Replace with your frontend URL
+    origin: process.env.NEXT_PUBLIC_FRONT_URL, // Replace with your frontend URL
     methods: ["GET", "POST"],
     allowedHeaders: ["my-custom-header"],
     credentials: true
@@ -17,6 +20,7 @@ const io = new Server(httpServer, {
 
 const players = [];
 const arrows = [];
+const hits = [];
 const rooms = [];
 
 const pastelColors = [
@@ -112,6 +116,18 @@ io.on("connection", (socket) => {
       arrows.splice(index, 1);
 
       io.sockets.in(data.roomId).emit("arrows", arrows);
+    }, 1500);
+  });
+
+  socket.on("send_hit", (data) => {
+    hits.unshift(data.hit);
+    io.sockets.in(data.roomId).emit("hits", hits);
+
+    setTimeout(function () {
+      const index = hits.findIndex((hit) => hit.id === data.id);
+      hits.splice(index, 1);
+
+      io.sockets.in(data.roomId).emit("hits", hits);
     }, 1000);
   });
 
@@ -130,6 +146,11 @@ io.on("connection", (socket) => {
   socket.on("send_msg", (data) => {
     //This will send a message to a specific room ID
     io.to(data.roomId).emit("receive_msg", data);
+  });
+
+  socket.on("ping", (data) => {
+    //This will send a message to a specific room ID
+    socket.emit("pong", data);
   });
 });
 
