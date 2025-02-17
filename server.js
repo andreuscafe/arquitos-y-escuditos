@@ -3,17 +3,22 @@ const { Server } = require("socket.io");
 const cors = require("cors");
 
 require("dotenv").config({
-  path: `.env.local`,
+  path: `.env`,
   override: true
 });
 
-const httpServer = http.createServer();
+const httpServer = http.createServer({
+  cors: {
+    origin: process.env.FRONT_URL,
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
 
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.NEXT_PUBLIC_FRONT_URL, // Replace with your frontend URL
+    origin: process.env.FRONT_URL, // Replace with your frontend URL
     methods: ["GET", "POST"],
-    allowedHeaders: ["my-custom-header"],
     credentials: true
   }
 });
